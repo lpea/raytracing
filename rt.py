@@ -1,3 +1,5 @@
+#!/bin/env python
+
 # https://www.youtube.com/watch?v=Qz0KTGYJtUk
 # https://github.com/SebLague/Ray-Tracing
 # https://blog.demofox.org/2020/05/25/casual-shadertoy-path-tracing-1-basic-camera-diffuse-emissive/
@@ -107,8 +109,10 @@ WHITE = Color(1.0, 1.0, 1.0)
 RED = Color(0.0, 0.0, 0.75)
 PINK = Color(0.75, 0.5, 0.75)
 LIGHT_PINK = Color(1.0, 0.75, 1.0)
+LIGHTER_PINK = Color(1.0, 0.875, 1.0)
 GREEN = Color(0.0, 0.75, 0.0)
 LIGHT_GREEN = Color(0.5, 0.75, 0.5)
+LIGHTER_GREEN = Color(0.75, 1.0, 0.75)
 BLUE = Color(0.75, 0.0, 0.0)
 LIGHT_BLUE = Color(0.75, 0.5, 0.5)
 YELLOW = Color(0.0, 0.75, 0.75)
@@ -132,8 +136,11 @@ class Material:
         self.emission_color = emission_color
         self.emission_intensity = emission_intensity
         self.emission_light = emission_color * emission_intensity
+
         # albedo: what color the material is under white light
         self.albedo = albedo
+
+        # Probability of specular reflection when a ray hits the material
         self.specular_prob = specular_prob
         # A specular ray with roughness = 1.0 will behave as a diffuse ray
         self.roughness = roughness
@@ -160,6 +167,7 @@ def Dir(x, y, z):
     return np.array([x, y, z])
 
 
+# fmt: off
 planets = [
     Sphere(Pos(-5, -5, 8), 5, Material(WHITE, 1.0, WHITE, 0.0, 0.0)),  # Sun
     Sphere(Pos(3, 2, 4), 1, Material(WHITE, 1.0, WHITE, 0.0, 0.0)),  # Sun #2
@@ -177,7 +185,7 @@ ground = [
     Plane(Pos(0, 0, 10), Dir(0, 0, -1), PassiveMaterial(WHITE, 0.0, 1.0)),
 ]
 
-box = [
+cornell_box_1 = [
     ## Ceiling
     Plane(Pos(0, -1.8, 0), Dir(0, 1, 0), Material(WHITE, 1.0, WHITE)),
     ## Passive Walls
@@ -186,21 +194,49 @@ box = [
     Plane(Pos(2, 0, 0), Dir(-1, 0, 0), MatteMaterial(GREEN)),  # Right
     Plane(Pos(0, 1, 0), Dir(0, -1, 0), MatteMaterial(WHITE)),  # Floor
     Plane(Pos(0, 0, -0.2), Dir(0, 0, 1), MatteMaterial(WHITE)),  # Rear
+    ## Matte Spheres (for RGB)
+    Sphere(Pos(-1, 0.7, 3), 0.3, MatteMaterial(LIGHTER_YELLOW)),
+    Sphere(Pos(0, 0.7, 3), 0.3, MatteMaterial(LIGHTER_PINK)),
+    Sphere(Pos(1, 0.7, 3), 0.3, MatteMaterial(LIGHTER_GREEN)),
+    ## Matte Spheres (for sRGB)
+    # Sphere(Pos(-1, 0.7, 3), 0.3, MatteMaterial(YELLOW)),
+    # Sphere(Pos(0, 0.7, 3), 0.3, MatteMaterial(PINK)),
+    # Sphere(Pos(1, 0.7, 3), 0.3, MatteMaterial(GREEN)),
     ## Shiny Spheres
     # Sphere(Pos(-1, 0.7, 3), 0.3, PassiveMaterial(YELLOW, 0.8, 0.2, WHITE)),
     # Sphere(Pos(0, 0.7, 3), 0.3, PassiveMaterial(LIGHT_GREEN, 0.8, 0.5, LIGHT_GREEN)),
     # Sphere(Pos(1, 0.7, 3), 0.3, PassiveMaterial(LIGHT_BLUE, 0.8, 0.8, LIGHT_BLUE)),
-    ## Matte Spheres
-    Sphere(Pos(-1, 0.7, 3), 0.3, MatteMaterial(YELLOW)),
-    Sphere(Pos(0, 0.7, 3), 0.3, MatteMaterial(PINK)),
-    Sphere(Pos(1, 0.7, 3), 0.3, MatteMaterial(GREEN)),
 ]
 
-OBJECTS = box
+cornell_box_2 = [
+    ## Ceiling
+    Plane(Pos(0, -1.5, 0), Dir(0, 1, 0), Material(WHITE, 1.0, WHITE)),
+    ## Passive Walls
+    Plane(Pos(0, 0, 3.7), Dir(0, 0, -1), MatteMaterial(WHITE)),  # Back
+    Plane(Pos(-1.5, 0, 0), Dir(1, 0, 0), MatteMaterial(RED)),  # Left
+    Plane(Pos(1.5, 0, 0), Dir(-1, 0, 0), MatteMaterial(GREEN)),  # Right
+    Plane(Pos(0, 1, 0), Dir(0, -1, 0), MatteMaterial(WHITE)),  # Floor
+    # Plane(Pos(0, 0, -0.2), Dir(0, 0, 1), MatteMaterial(WHITE)),  # Rear
+    ## Shiny Spheres
+    Sphere(Pos(-1.1, 0.6, 3), 0.4, PassiveMaterial(LIGHT_YELLOW, 0.1, 0.2, Color(0.9, 0.9, 0.9))),
+    Sphere(Pos(0, 0.6, 3), 0.4, PassiveMaterial(PINK, 0.3, 0.2, Color(0.9, 0.9, 0.9))),
+    Sphere(Pos(1.1, 0.6, 3), 0.4, PassiveMaterial(BLUE, 0.5, 0.5, RED)),
+    ## Green Spheres
+    Sphere(Pos(-1.25, -0.5, 3.5), 0.2, PassiveMaterial(GREEN, 1.0, 0, Color(0.3, 1.0, 0.3))),
+    Sphere(Pos(-0.625, -0.5, 3.5), 0.2, PassiveMaterial(GREEN, 1.0, 0.25, Color(0.3, 1.0, 0.3))),
+    Sphere(Pos(0, -0.5, 3.5), 0.2, PassiveMaterial(GREEN, 1.0, 0.5, Color(0.3, 1.0, 0.3))),
+    Sphere(Pos(0.625, -0.5, 3.5), 0.2, PassiveMaterial(GREEN, 1.0, 0.75, Color(0.3, 1.0, 0.3))),
+    Sphere(Pos(1.25, -0.5, 3.5), 0.2, PassiveMaterial(GREEN, 1.0, 1.0, Color(0.3, 1.0, 0.3))),
+]
+# fmt: on
+
+OBJECTS = cornell_box_1
 
 
 class Ray:
-    MAX_BOUNCES = 10
+    # Acts a bit like an exposure setting, the higher the value the more light
+    # is gathered by each pixel. It should be set carefully to avoid "over-exposure".
+    MAX_BOUNCES = 6
 
     def __init__(self, origin, direction):
         self.orig = origin
@@ -239,7 +275,6 @@ class Ray:
 
         # Test for specular reflection
         is_specular = random.random() < mat.specular_prob
-        is_specular = False
 
         # Sample direction for diffuse reflection
         # Cosine weighted distribution
@@ -249,7 +284,8 @@ class Ray:
         # if it's a diffuse reflection or the specular color if it's a specular ray.
         if is_specular:
             specular_dir = reflect(self.dir, normal)
-            self.dir = lerp(specular_dir, diffuse_dir, mat.roughness)
+            # Square the roughness to make it perceptually linear
+            self.dir = normalize(lerp(specular_dir, diffuse_dir, mat.roughness**2))
             # p = max(mat.specular_prob, 0.001)
             # Division par p => sur-saturation ?
             self.throughput *= mat.specular_color
@@ -315,8 +351,10 @@ def render_frame(i):
             # Anti-aliasing: add a small jitter on the ray direction
             ju, jv = random.random() - 0.5, random.random() - 0.5
             ray_dir = np.array([u - u0 + ju, v - v0 + jv, focal])
+
             ray = Ray(cam_position, ray_dir)
             ray.shoot()
+
             color = ray.color
             # Apply tone mapping: convert unbounded HDR color range to SDR color range
             # color = ACESFilm(color)
