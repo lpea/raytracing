@@ -1,9 +1,5 @@
 #!/bin/env python
 
-# https://www.youtube.com/watch?v=Qz0KTGYJtUk
-# https://github.com/SebLague/Ray-Tracing
-# https://blog.demofox.org/2020/05/25/casual-shadertoy-path-tracing-1-basic-camera-diffuse-emissive/
-
 import cv2
 from datetime import datetime
 import math
@@ -199,9 +195,9 @@ cornell_box_1 = [
     Sphere(Pos(0, 0.7, 3), 0.3, MatteMaterial(LIGHTER_PINK)),
     Sphere(Pos(1, 0.7, 3), 0.3, MatteMaterial(LIGHTER_GREEN)),
     ## Matte Spheres (for sRGB)
-    # Sphere(Pos(-1, 0.7, 3), 0.3, MatteMaterial(YELLOW)),
-    # Sphere(Pos(0, 0.7, 3), 0.3, MatteMaterial(PINK)),
-    # Sphere(Pos(1, 0.7, 3), 0.3, MatteMaterial(GREEN)),
+    # Sphere(Pos(-1, 0.7, 3), 0.3, MatteMaterial(LIGHT_YELLOW)),
+    # Sphere(Pos(0, 0.7, 3), 0.3, MatteMaterial(LIGHT_PINK)),
+    # Sphere(Pos(1, 0.7, 3), 0.3, MatteMaterial(LIGHT_GREEN)),
     ## Shiny Spheres
     # Sphere(Pos(-1, 0.7, 3), 0.3, PassiveMaterial(YELLOW, 0.8, 0.2, WHITE)),
     # Sphere(Pos(0, 0.7, 3), 0.3, PassiveMaterial(LIGHT_GREEN, 0.8, 0.5, LIGHT_GREEN)),
