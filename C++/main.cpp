@@ -64,20 +64,6 @@ Vec lerp(const Vec &v0, const Vec &v1, float t)
 // BGR
 static const Color BLACK(0.0, 0.0, 0.0);
 static const Color WHITE(1.0, 1.0, 1.0);
-static const Color RED(0.0, 0.0, 0.75);
-static const Color PINK(0.75, 0.5, 0.75);
-static const Color LIGHT_PINK(1.0, 0.75, 1.0);
-static const Color LIGHTER_PINK(1.0, 0.875, 1.0);
-static const Color GREEN(0.0, 0.75, 0.0);
-static const Color LIGHT_GREEN(0.5, 0.75, 0.5);
-static const Color LIGHTER_GREEN(0.75, 1.0, 0.75);
-static const Color BLUE(0.75, 0.0, 0.0);
-static const Color LIGHT_BLUE(0.75, 0.5, 0.5);
-static const Color YELLOW(0.0, 0.75, 0.75);
-static const Color LIGHT_YELLOW(0.5, 0.75, 0.75);
-static const Color LIGHTER_YELLOW(0.75, 1.0, 1.0);
-static const Color PURPLE(0.75, 0.0, 0.75);
-static const Color ORANGE(0.0, 0.5, 0.75);
 
 struct Material
 {
@@ -211,53 +197,71 @@ struct Plane : Object
 using ObjectPtr = std::shared_ptr<Object>;
 using Scene = std::vector<ObjectPtr>;
 
+static const Color BLACK1(0.0, 0.0, 0.0);
+static const Color LIGHT_YELLOW1(0.7, 0.9, 1.0);
+static const Color GRAY1(0.7, 0.7, 0.7);
+static const Color RED1(0.1, 0.1, 0.7);
+static const Color GREEN1(0.1, 0.7, 0.1);
+static const Color YELLOW1(0.75, 0.9, 0.9);
+static const Color PINK1(0.9, 0.75, 0.9);
+static const Color LIGHT_BLUE1(0.9, 0.9, 0.75);
+
 Scene buildSceneCornellBox1()
 {
     std::vector<ObjectPtr> scene;
     // Ceiling
-    scene.push_back(std::make_shared<Plane>(Point(0, -1.8, 0), Vec(0, 1, 0), Material(WHITE, 1.0, WHITE, 0.0, 1.0, WHITE)));
+    scene.push_back(std::make_shared<Plane>(Point(0, -1.25, 0), Vec(0, 1, 0), Material(LIGHT_YELLOW1, 4.0, BLACK1, 0.0, 1.0, LIGHT_YELLOW1)));
     // Walls
-    scene.push_back(std::make_shared<Plane>(Point(0, 0, 5), Vec(0, 0, -1), makePassiveMaterial(WHITE)));
-    scene.push_back(std::make_shared<Plane>(Point(-2, 0, 0), Vec(1, 0, 0), makePassiveMaterial(RED)));
-    scene.push_back(std::make_shared<Plane>(Point(2, 0, 0), Vec(-1, 0, 0), makePassiveMaterial(GREEN)));
-    scene.push_back(std::make_shared<Plane>(Point(0, 1, 0), Vec(0, -1, 0), makePassiveMaterial(WHITE)));
-    scene.push_back(std::make_shared<Plane>(Point(0, 0, -0.2), Vec(0, 0, 1), makePassiveMaterial(WHITE)));
+    scene.push_back(std::make_shared<Plane>(Point(0, 0, 2.5), Vec(0, 0, -1), makePassiveMaterial(GRAY1)));   // Front
+    scene.push_back(std::make_shared<Plane>(Point(-1.25, 0, 0), Vec(1, 0, 0), makePassiveMaterial(RED1)));   // Left
+    scene.push_back(std::make_shared<Plane>(Point(1.25, 0, 0), Vec(-1, 0, 0), makePassiveMaterial(GREEN1))); // Right
+    scene.push_back(std::make_shared<Plane>(Point(0, 1.25, 0), Vec(0, -1, 0), makePassiveMaterial(GRAY1)));  // Floor
+    scene.push_back(std::make_shared<Plane>(Point(0, 0, -0.1), Vec(0, 0, 1), makePassiveMaterial(BLACK1)));  // Rear
     // Spheres
-    scene.push_back(std::make_shared<Sphere>(Point(-1, 0.7, 3), 0.3, makePassiveMaterial(LIGHTER_YELLOW)));
-    scene.push_back(std::make_shared<Sphere>(Point(0, 0.7, 3), 0.3, makePassiveMaterial(LIGHTER_PINK)));
-    scene.push_back(std::make_shared<Sphere>(Point(1, 0.7, 3), 0.3, makePassiveMaterial(LIGHTER_GREEN)));
+    scene.push_back(std::make_shared<Sphere>(Point(-0.9, 0.95, 2.0), 0.3, makePassiveMaterial(YELLOW1)));
+    scene.push_back(std::make_shared<Sphere>(Point(0, 0.95, 2.0), 0.3, makePassiveMaterial(PINK1)));
+    scene.push_back(std::make_shared<Sphere>(Point(0.9, 0.95, 2.0), 0.3, makePassiveMaterial(LIGHT_BLUE1)));
 
     return scene;
 }
+
+static const Color YELLOW2(0.5, 0.9, 0.9);
+static const Color LIGHT_GRAY2(0.9, 0.9, 0.9);
+static const Color PINK2(0.9, 0.5, 0.9);
+static const Color PURE_BLUE(1.0, 0.0, 0.0);
+static const Color PURE_RED(0.0, 0.0, 1.0);
+
+static const Color WHITE2(0.0, 0.0, 0.0);
+static const Color GREEN2(0.3, 1.0, 0.3);
 
 Scene buildSceneCornellBox2()
 {
     std::vector<ObjectPtr> scene;
     // Ceiling
-    scene.push_back(std::make_shared<Plane>(Point(0, -1.5, 0), Vec(0, 1, 0), Material(WHITE, 1.0, WHITE, 0.0, 1.0, WHITE)));
+    scene.push_back(std::make_shared<Plane>(Point(0, -1.25, 0), Vec(0, 1, 0), Material(LIGHT_YELLOW1, 4.0, BLACK1, 0.0, 1.0, LIGHT_YELLOW1)));
     // Walls
-    scene.push_back(std::make_shared<Plane>(Point(0, 0, 3.7), Vec(0, 0, -1), makePassiveMaterial(WHITE))); // Front
-    scene.push_back(std::make_shared<Plane>(Point(-1.5, 0, 0), Vec(1, 0, 0), makePassiveMaterial(RED)));   // Left
-    scene.push_back(std::make_shared<Plane>(Point(1.5, 0, 0), Vec(-1, 0, 0), makePassiveMaterial(GREEN))); // Right
-    scene.push_back(std::make_shared<Plane>(Point(0, 1, 0), Vec(0, -1, 0), makePassiveMaterial(WHITE)));   // Floor
-    scene.push_back(std::make_shared<Plane>(Point(0, 0, -0.2), Vec(0, 0, 1), makePassiveMaterial(WHITE))); // Rear
+    scene.push_back(std::make_shared<Plane>(Point(0, 0, 2.5), Vec(0, 0, -1), makePassiveMaterial(GRAY1)));   // Front
+    scene.push_back(std::make_shared<Plane>(Point(-1.25, 0, 0), Vec(1, 0, 0), makePassiveMaterial(RED1)));   // Left
+    scene.push_back(std::make_shared<Plane>(Point(1.25, 0, 0), Vec(-1, 0, 0), makePassiveMaterial(GREEN1))); // Right
+    scene.push_back(std::make_shared<Plane>(Point(0, 1.25, 0), Vec(0, -1, 0), makePassiveMaterial(GRAY1)));  // Floor
+    scene.push_back(std::make_shared<Plane>(Point(0, 0, -0.1), Vec(0, 0, 1), makePassiveMaterial(BLACK1)));  // Rear
     // Shiny Spheres
-    scene.push_back(std::make_shared<Sphere>(Point(-1.1, 0.6, 3), 0.4, makePassiveMaterial(LIGHT_YELLOW, 0.1, 0.2, Color(0.9, 0.9, 0.9))));
-    scene.push_back(std::make_shared<Sphere>(Point(0, 0.6, 3), 0.4, makePassiveMaterial(PINK, 0.3, 0.2, Color(0.9, 0.9, 0.9))));
-    scene.push_back(std::make_shared<Sphere>(Point(1.1, 0.6, 3), 0.4, makePassiveMaterial(BLUE, 0.5, 0.5, RED)));
+    scene.push_back(std::make_shared<Sphere>(Point(-0.9, 0.95, 2.0), 0.3, makePassiveMaterial(YELLOW2, 0.1, 0.2, LIGHT_GRAY2)));
+    scene.push_back(std::make_shared<Sphere>(Point(0, 0.95, 2.0), 0.3, makePassiveMaterial(PINK2, 0.3, 0.2, LIGHT_GRAY2)));
+    scene.push_back(std::make_shared<Sphere>(Point(0.9, 0.95, 2.0), 0.3, makePassiveMaterial(PURE_BLUE, 0.5, 0.4, PURE_RED)));
     // Green Spheres
-    scene.push_back(std::make_shared<Sphere>(Point(-1.25, -0.5, 3.5), 0.2, makePassiveMaterial(GREEN, 1.0, 0, Color(0.3, 1.0, 0.3))));
-    scene.push_back(std::make_shared<Sphere>(Point(-0.625, -0.5, 3.5), 0.2, makePassiveMaterial(GREEN, 1.0, 0.25, Color(0.3, 1.0, 0.3))));
-    scene.push_back(std::make_shared<Sphere>(Point(0, -0.5, 3.5), 0.2, makePassiveMaterial(GREEN, 1.0, 0.5, Color(0.3, 1.0, 0.3))));
-    scene.push_back(std::make_shared<Sphere>(Point(0.625, -0.5, 3.5), 0.2, makePassiveMaterial(GREEN, 1.0, 0.75, Color(0.3, 1.0, 0.3))));
-    scene.push_back(std::make_shared<Sphere>(Point(1.25, -0.5, 3.5), 0.2, makePassiveMaterial(GREEN, 1.0, 1.0, Color(0.3, 1.0, 0.3))));
+    scene.push_back(std::make_shared<Sphere>(Point(-1.0, 0.0, 2.3), 0.175, makePassiveMaterial(WHITE2, 1.0, 0, GREEN2)));
+    scene.push_back(std::make_shared<Sphere>(Point(-0.5, 0.0, 2.3), 0.175, makePassiveMaterial(WHITE2, 1.0, 0.25, GREEN2)));
+    scene.push_back(std::make_shared<Sphere>(Point(0.0, 0.0, 2.3), 0.175, makePassiveMaterial(WHITE2, 1.0, 0.5, GREEN2)));
+    scene.push_back(std::make_shared<Sphere>(Point(0.5, 0.0, 2.3), 0.175, makePassiveMaterial(WHITE2, 1.0, 0.75, GREEN2)));
+    scene.push_back(std::make_shared<Sphere>(Point(1.0, 0.0, 2.3), 0.175, makePassiveMaterial(WHITE2, 1.0, 1.0, GREEN2)));
 
     return scene;
 }
 
 Color shootRayAtScene(Ray ray, const Scene &scene)
 {
-    static const auto MAX_BOUNCES = 6;
+    static const auto MAX_BOUNCES = 8;
     for (auto i = 0; i < MAX_BOUNCES; ++i)
     {
         auto min_distance = std::numeric_limits<float>::infinity();
@@ -313,10 +317,10 @@ cv::Mat renderFrame(const Scene &scene)
     static const auto parallel_execution = true;
 
     const auto t0 = std::chrono::steady_clock::now();
-    const auto width = 640;
-    const auto height = 480;
+    const auto width = 320;
+    const auto height = 240;
     const auto origin = Point(0, 0, 0);
-    const auto fov = 60 * M_PI / 180;
+    const auto fov = 90 * M_PI / 180;
     const auto focal = (width / 2) / std::tan(fov / 2);
 
     const auto u0 = (width - 1) / 2;
@@ -383,7 +387,7 @@ cv::Mat renderFrame(const Scene &scene)
 
 int main()
 {
-    const auto scene = buildSceneCornellBox2();
+    const auto scene = buildSceneCornellBox1();
     const auto t1 = std::chrono::steady_clock::now();
     const auto im = renderFrame(scene);
     const auto t2 = std::chrono::steady_clock::now();

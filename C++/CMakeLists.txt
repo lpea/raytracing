@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.27)
+cmake_minimum_required(VERSION 3.24)
 project(RayTracer)
 
 find_package(OpenCV COMPONENTS core imgproc highgui)
