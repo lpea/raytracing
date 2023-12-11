@@ -34,7 +34,7 @@ Since diffuse reflections randomly change the direction of the ray after hitting
 
 A few parameters can have a dramatic effect on the final result.
 
-The **number of frames** that are averaged together has a significant effect on the image "smootheness": a high number of frames lowers the noise level. It has no effet on the light level (in the sense of "exposure").
+The **number of frames** that are averaged together has a significant effect on the image "smoothness": a high number of frames lowers the noise level. It has no effect on the light level (in the sense of "exposure").
 
 The **maximum number of bounces** determines how many bounces are calculated for a single light ray. After a certain number of bounces, we can consider that additional ones do not contribute in a significative way to its light intensity and color. Increasing this value allows to better calculate multiple reflections. However changing this value also affects the light intensity, like changing the exposure time or sensitivity on a camera.
 
