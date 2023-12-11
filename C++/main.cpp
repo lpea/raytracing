@@ -304,11 +304,67 @@ Color shootRayAtScene(Ray ray, const Scene &scene)
     return ray.color;
 }
 
-void convertAndSaveFrame(const std::string &name, const cv::Mat &im)
+template <typename T>
+T clip(T x, T low = 0.0, T high = 1.0)
 {
-    cv::Mat im8b;
-    im.convertTo(im8b, CV_8U, 255.0);
-    cv::imwrite(name, im8b);
+    return MAX(MIN(x, high), low);
+}
+
+Color ACESFilm(const Color &color)
+{
+    // Tone mapping curve
+    // https://knarkowicz.wordpress.com/2016/01/06/aces-filmic-tone-mapping-curve/
+    static const auto a = 2.51;
+    static const auto b = 0.03;
+    static const auto c = 2.43;
+    static const auto d = 0.59;
+    static const auto e = 0.14;
+    const auto lambda = [&](auto x)
+    {
+        x = (x * (a * x + b)) / (x * (c * x + d) + e);
+        return clip(x);
+    };
+    return Color(lambda(color[0]), lambda(color[1]), lambda(color[2]));
+}
+
+Color linearTosRGB(const Color &color)
+{
+    const auto lambda = [&](auto x)
+    {
+        x = clip(x);
+        return x < 0.0031308 ? x * 12.92 : std::pow(x, 1.0 / 2.4) * 1.055 - 0.055;
+    };
+    return Color(lambda(color[0]), lambda(color[1]), lambda(color[2]));
+}
+
+Color sRGBToLinear(const Color &color)
+{
+    const auto lambda = [&](auto x)
+    {
+        x = clip(x);
+        return x < 0.04045 ? x / 12.92 : std::pow((x + 0.055) / 1.055, 2.4);
+    };
+    return Color(lambda(color[0]), lambda(color[1]), lambda(color[2]));
+}
+
+cv::Mat applyPostProcessing(const cv::Mat &image_fp)
+{
+    static cv::Mat im_disp(image_fp.size(), CV_8UC3);
+    for (auto v = 0; v < image_fp.rows; ++v)
+    {
+        for (auto u = 0; u < image_fp.cols; ++u)
+        {
+            auto color = image_fp.at<Color>(v, u);
+            // Apply exposure
+            color *= 0.5;
+            // Apply tone mapping: convert unbounded HDR color range to SDR color range
+            color = ACESFilm(color);
+            // Convert from linear to sRGB for display
+            color = linearTosRGB(color);
+            im_disp.at<cv::Vec3b>(v, u) = color * 255;
+        }
+    }
+    return im_disp;
 }
 
 cv::Mat renderFrame(const Scene &scene)
@@ -328,6 +384,7 @@ cv::Mat renderFrame(const Scene &scene)
 
     cv::Mat avg_im(height, width, CV_32FC3, Color(0, 0, 0));
     cv::Mat new_im(height, width, CV_32FC3, Color(0, 0, 0));
+    cv::Mat im_disp;
     for (auto i = 0; i < nb_frames; ++i)
     {
         const auto t1 = std::chrono::steady_clock::now();
@@ -337,7 +394,7 @@ cv::Mat renderFrame(const Scene &scene)
         {
             const Vec dir(u - u0 + getRandomValue() - 0.5, v - v0 + getRandomValue() - 0.5, focal);
             Ray ray(origin, dir);
-            auto color = shootRayAtScene(ray, scene);
+            const auto color = shootRayAtScene(ray, scene);
             new_im.at<Color>(v, u) = color;
         };
 
@@ -365,34 +422,40 @@ cv::Mat renderFrame(const Scene &scene)
             }
         }
 
+        // Average with previous images
         const auto weight = 1.0 / (i + 1);
         avg_im = avg_im * (1 - weight) + new_im * weight;
 
         const auto t2 = std::chrono::steady_clock::now();
         const auto overall_time = std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t0).count() / 1000.0;
         const auto frame_time = std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count() / 1000.0;
-
         std::cout << "[" << overall_time << "] "
                   << "Frame " << i << " rendered in " << frame_time << " s" << std::endl;
+
+        // Post-process and conversion to 3x8 bits
+        im_disp = applyPostProcessing(avg_im);
+
+        const auto t3 = std::chrono::steady_clock::now();
+        const auto post_proc_time = std::chrono::duration_cast<std::chrono::milliseconds>(t3 - t2).count() / 1000.0;
+        std::cout << "Post-processing: " << post_proc_time << " s" << std::endl;
+
         if (i % 100 == 0)
         {
-            convertAndSaveFrame("frame_" + std::to_string(i) + ".png", avg_im);
+            cv::imwrite("frame_" + std::to_string(i) + ".png", im_disp);
         }
-        cv::imshow("render", avg_im);
+        cv::imshow("render", im_disp);
         cv::waitKey(1);
     }
 
-    return avg_im;
+    return im_disp;
 }
 
 int main()
 {
     const auto scene = buildSceneCornellBox1();
-    const auto t1 = std::chrono::steady_clock::now();
-    const auto im = renderFrame(scene);
-    const auto t2 = std::chrono::steady_clock::now();
-    convertAndSaveFrame("final_render.png", im);
-    cv::imshow("final render", im);
+    const auto final_image = renderFrame(scene);
+    cv::imwrite("final_render.png", final_image);
+    cv::imshow("final render", final_image);
     cv::waitKey();
     return 0;
 }
