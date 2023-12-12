@@ -131,10 +131,17 @@ struct Ray
     Color throughput;
 };
 
+struct Hit
+{
+    bool found{false};
+    double distance{std::numeric_limits<double>::infinity()};
+    Point hit_point{};
+    Vec normal{};
+};
+
 struct Object
 {
-    virtual double intersect(const Ray &) const = 0;
-    virtual Vec getNormal(const Point &) const = 0;
+    virtual Hit intersect(const Ray &) const = 0;
     virtual const Material &getMaterial() const = 0;
 };
 
@@ -142,11 +149,12 @@ struct Sphere : Object
 {
     Point pos;
     float radius;
+
     Material mat;
 
     Sphere(const Point &pos, float radius, const Material &material) : pos(pos), radius(radius), mat(material) {}
 
-    double intersect(const Ray &ray) const override
+    Hit intersect(const Ray &ray) const override
     {
         const auto v = ray.orig - pos;
         const auto d = ray.dir;
@@ -155,19 +163,18 @@ struct Sphere : Object
         const auto b = d.dot(v);
         const auto c = v.dot(v) - r2;
         const auto delta = b * b - c;
+
         if (delta > 0)
         {
-            return -b - std::sqrt(delta);
+            const auto dist = -b - std::sqrt(delta);
+            if (dist >= 0)
+            {
+                const auto hit_point = ray.orig + dist * d;
+                // Todo handle case where the ray came from inside the sphere?
+                return {true, dist, hit_point, (hit_point - pos) / radius};
+            }
         }
-        else
-        {
-            return std::numeric_limits<double>::infinity();
-        }
-    }
-
-    Vec getNormal(const Point &pt) const override
-    {
-        return (pt - pos) / radius;
+        return {};
     }
 
     const Material &getMaterial() const override
@@ -180,6 +187,7 @@ struct Plane : Object
 {
     Point pos;
     Vec normal;
+
     Material mat;
 
     Plane(const Point &position, const Vec &normal, const Material &material)
@@ -187,23 +195,96 @@ struct Plane : Object
     {
     }
 
-    double intersect(const Ray &ray) const override
+    Hit intersect(const Ray &ray) const override
     {
         const auto v = pos - ray.orig;
         const auto p = ray.dir.dot(normal);
         if (p != 0)
         {
-            return v.dot(normal) / p;
+            const auto dist = v.dot(normal) / p;
+            if (dist >= 0)
+            {
+                const auto hit_point = ray.orig + dist * ray.dir;
+                return {true, dist, hit_point, p < 0 ? normal : -normal};
+            }
         }
-        else
-        {
-            return std::numeric_limits<double>::infinity();
-        }
+        return {};
     }
 
-    Vec getNormal(const Point &) const override
+    const Material &getMaterial() const override
     {
-        return normal;
+        return mat;
+    }
+};
+
+struct Triangle : Object
+{
+    Point a;
+    Point b;
+    Point c;
+
+    Material mat;
+
+private:
+    Vec ab;
+    Vec ac;
+    Vec normal;
+
+public:
+    Triangle(Point a, Point b, Point c, Material mat)
+        : a(a), b(b), c(c), mat(mat), ab(b - a), ac(c - a), normal(ab.cross(ac))
+    {
+    }
+
+    // https://stackoverflow.com/a/42752998
+    Hit intersect(const Ray &ray) const override
+    {
+        const auto det = -ray.dir.dot(normal);
+        const auto invdet = 1.0 / det;
+        const auto AO = ray.orig - a;
+        const auto DAO = AO.cross(ray.dir);
+        const auto u = ac.dot(DAO) * invdet;
+        const auto v = -ab.dot(DAO) * invdet;
+        const auto t = AO.dot(normal) * invdet;
+        if (det > 0.0 and t >= 0.0 and u >= 0.0 and v >= 0.0 and (u + v) <= 1.0)
+        {
+            return {true, t, ray.orig + t * ray.dir, det < 0 ? -normal : normal};
+        }
+        return {};
+    }
+
+    const Material &getMaterial() const override
+    {
+        return mat;
+    }
+};
+
+// Made of two triangles
+// TODO: what about a plain rectangle implementation? Can it be more efficient?
+struct Quad : Object
+{
+    Material mat;
+
+private:
+    Triangle abc;
+    Triangle cda;
+
+public:
+    Quad(Point a, Point b, Point c, Point d, Material mat)
+        : mat(mat), abc(a, b, c, mat), cda(c, d, a, mat)
+    {
+        // TODO: check all points are on a plane?
+        // Maybe check that abc.getNormal().dot(cda.getNormal()) == 1.0?
+    }
+
+    Hit intersect(const Ray &ray) const override
+    {
+        const auto hit = abc.intersect(ray);
+        if (hit.found and hit.distance >= 0)
+        {
+            return hit;
+        }
+        return cda.intersect(ray);
     }
 
     const Material &getMaterial() const override
@@ -282,22 +363,22 @@ Color shootRayAtScene(Ray ray, const Scene &scene)
     static const auto MAX_BOUNCES = 8;
     for (auto i = 0; i < MAX_BOUNCES; ++i)
     {
-        auto min_distance = std::numeric_limits<float>::infinity();
+        Hit best_hit{};
         ObjectPtr hit_obj;
         for (const auto &obj : scene)
         {
-            const auto distance = obj->intersect(ray);
-            if (0 < distance and distance < min_distance)
+            const auto hit = obj->intersect(ray);
+
+            if (hit.found and 0 < hit.distance and hit.distance < best_hit.distance)
             {
-                min_distance = distance;
+                best_hit = hit;
                 hit_obj = obj;
             }
         }
         if (hit_obj)
         {
-            const auto hit_point = ray.orig + min_distance * ray.dir;
-            const auto normal = hit_obj->getNormal(hit_point);
-            ray.orig = hit_point + 0.001 * normal;
+            const auto &normal = best_hit.normal;
+            ray.orig = best_hit.hit_point + 0.001 * normal;
 
             const auto &mat = hit_obj->getMaterial();
             ray.color += (mat.emission_color * mat.emission_intensity).mul(ray.throughput);
