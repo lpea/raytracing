@@ -12,6 +12,11 @@ using Vec = cv::Point3f;
 // using Color = cv::Scalar;
 using Color = cv::Vec3f;
 
+Color::value_type max(const Color &c)
+{
+    return MAX(MAX(c[0], c[1]), c[2]);
+}
+
 class RandomGenerator
 {
 public:
@@ -408,6 +413,13 @@ Color shootRayAtScene(Ray ray, const Scene &scene)
                 ray.dir = diffuse_dir;
                 ray.throughput = ray.throughput.mul(mat.albedo);
             }
+
+            // PERFORMANCE
+            if (max(ray.throughput) == 0.0) // Stop bouncing around if the throughput is zero
+            {
+                break;
+            }
+            // TODO: break early if throughput < threshold?
         }
     }
 
