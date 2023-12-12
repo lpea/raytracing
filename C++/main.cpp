@@ -15,35 +15,53 @@ using Color = cv::Vec3f;
 class RandomGenerator
 {
 public:
-    RandomGenerator() : rd(), gen(rd()), dis()
+    RandomGenerator() : rd(), gen(rd()), dis_uniform(), dis_normal()
     {
     }
-    double get()
+    double getUniform()
     {
         // return a random value in [0.0, 1.0).
-        return dis(gen);
+        return dis_uniform(gen);
+    }
+    double getNormal()
+    {
+        return dis_normal(gen);
     }
 
 private:
     std::random_device rd; // Will be used to obtain a seed for the random number engine
     std::mt19937 gen;
-    std::uniform_real_distribution<> dis;
+    std::uniform_real_distribution<> dis_uniform;
+    std::normal_distribution<> dis_normal;
 };
 
-float getRandomValue()
+float getRandomValueUniform()
 {
     static RandomGenerator gen;
-    return gen.get();
+    return gen.getUniform();
 }
 
-Vec randomUnitVector()
+float getRandomValueNormal()
 {
-    const auto theta = getRandomValue() * M_PI;
-    const auto phi = getRandomValue() * 2 * M_PI;
-    const float x = std::sin(theta) * std::cos(phi);
-    const float y = std::sin(theta) * std::sin(phi);
-    const float z = std::cos(theta);
-    return {x, y, z};
+    static RandomGenerator gen;
+    return gen.getNormal();
+}
+
+Vec randomUnitVectorOnCircle()
+{
+    const auto theta = getRandomValueUniform() * 2 * M_PI;
+    return Vec(std::cos(theta), std::sin(theta), 0);
+}
+
+Vec randomUnitVectorOnSphere()
+{
+    // Random unit vector on the unit sphere
+    // https://mathworld.wolfram.com/SpherePointPicking.html
+    const auto x = getRandomValueNormal();
+    const auto y = getRandomValueNormal();
+    const auto z = getRandomValueNormal();
+    const auto invNorm = 1.0 / std::hypot(x, y, z);
+    return Vec(x * invNorm, y * invNorm, z * invNorm);
 }
 
 Vec normalize(const Vec &v)
@@ -284,16 +302,15 @@ Color shootRayAtScene(Ray ray, const Scene &scene)
             const auto &mat = hit_obj->getMaterial();
             ray.color += (mat.emission_color * mat.emission_intensity).mul(ray.throughput);
 
-            const auto is_specular = getRandomValue() < mat.specular_prob;
-            const auto diffuse_dir = normalize(normal + randomUnitVector());
+            const auto diffuse_dir = normalize(normal + randomUnitVectorOnSphere());
 
-            if (is_specular)
+            if (getRandomValueUniform() < mat.specular_prob) // specular reflection
             {
                 const auto specular_dir = reflect(ray.dir, normal);
                 ray.dir = lerp(specular_dir, diffuse_dir, mat.roughness * mat.roughness);
                 ray.throughput = ray.throughput.mul(mat.specular_color);
             }
-            else
+            else // diffuse reflection
             {
                 ray.dir = diffuse_dir;
                 ray.throughput = ray.throughput.mul(mat.albedo);
@@ -392,8 +409,10 @@ cv::Mat renderFrame(const Scene &scene)
 
         const auto update_pixel_value = [&](int u, int v)
         {
-            const Vec dir(u - u0 + getRandomValue() - 0.5, v - v0 + getRandomValue() - 0.5, focal);
-            Ray ray(origin, dir);
+            // Antialiasing: add jitter on ray direction
+            const auto jitter = randomUnitVectorOnCircle() / 2;
+            const Vec dir(u - u0, v - v0, focal);
+            const Ray ray(origin, dir + jitter);
             const auto color = shootRayAtScene(ray, scene);
             new_im.at<Color>(v, u) = color;
         };
