@@ -12,12 +12,15 @@ import time
 
 
 def random_vector_sphere():
-    theta = random.random() * math.pi
-    phi = random.random() * 2 * math.pi
-    x = math.sin(theta) * math.cos(phi)
-    y = math.sin(theta) * math.sin(phi)
-    z = math.cos(theta)
-    return np.array([x, y, z])
+    x = random.gauss(0.0, 1.0)
+    y = random.gauss(0.0, 1.0)
+    z = random.gauss(0.0, 1.0)
+    return np.array([x, y, z]) / math.hypot(x, y, z)
+
+
+def random_vector_circle():
+    theta = random.random() * 2 * math.pi
+    return np.array([np.cos(theta), np.sin(theta), 0])
 
 
 def random_vector_hemisphere(normal):
@@ -93,6 +96,7 @@ class Plane:
             return None
 
     def get_normal(self, pt):
+        # FIXME: should depend on the side of the plane the ray comes from
         return self.normal
 
 
@@ -123,7 +127,7 @@ class Material:
         self,
         emission_color=WHITE,
         emission_intensity=0.0,
-        albedo=WHITE,
+        albedo=BLACK,
         specular_prob=0.0,
         roughness=0.0,
         specular_color=WHITE,
@@ -165,8 +169,8 @@ def Dir(x, y, z):
 
 # fmt: off
 planets = [
-    Sphere(Pos(-5, -5, 8), 5, Material(WHITE, 1.0, WHITE, 0.0, 0.0)),  # Sun
-    Sphere(Pos(3, 2, 4), 1, Material(WHITE, 1.0, WHITE, 0.0, 0.0)),  # Sun #2
+    Sphere(Pos(-5, -5, 8), 5, Material(WHITE, 1.0, BLACK, 0.0, 0.0)),  # Sun
+    Sphere(Pos(3, 2, 4), 1, Material(WHITE, 1.0, BLACK, 0.0, 0.0)),  # Sun #2
     Sphere(Pos(2, -2, 7), 1, PassiveMaterial(LIGHT_GREEN, 0.7, 0.3, LIGHT_GREEN)),
     Sphere(Pos(3, 0, 10), 4, PassiveMaterial(YELLOW, 0.0, 1.0, YELLOW)),
     Sphere(Pos(-2, 2, 20), 5, PassiveMaterial(RED, 0.0, 1.0, RED)),
@@ -174,7 +178,7 @@ planets = [
 ]
 
 ground = [
-    Sphere(Pos(-10, -10, 0), 10, Material(WHITE, 1.0, WHITE, 0.0, 0.0)),  # Sun
+    Sphere(Pos(-10, -10, 0), 10, Material(WHITE, 1.0, BLACK, 0.0, 0.0)),  # Sun
     Sphere(Pos(0, 100, 5), 100, PassiveMaterial(LIGHT_GREEN, 0.0, 1.0)),  # Ground
     Sphere(Pos(-0.6, 0, 1.5), 0.3, PassiveMaterial(RED, 0.8, 0.2, RED)),
     Sphere(Pos(0.6, 0, 2), 0.3, PassiveMaterial(YELLOW, 0.8, 0.5, YELLOW)),
@@ -183,36 +187,28 @@ ground = [
 
 cornell_box_1 = [
     ## Ceiling
-    Plane(Pos(0, -1.8, 0), Dir(0, 1, 0), Material(WHITE, 1.0, WHITE)),
+    Plane(Pos(0, -1.8, 0), Dir(0, 1, 0), Material(WHITE, 2.0, BLACK)),
     ## Passive Walls
     Plane(Pos(0, 0, 5), Dir(0, 0, -1), MatteMaterial(WHITE)),  # Back
     Plane(Pos(-2, 0, 0), Dir(1, 0, 0), MatteMaterial(RED)),  # Left
     Plane(Pos(2, 0, 0), Dir(-1, 0, 0), MatteMaterial(GREEN)),  # Right
     Plane(Pos(0, 1, 0), Dir(0, -1, 0), MatteMaterial(WHITE)),  # Floor
-    Plane(Pos(0, 0, -0.2), Dir(0, 0, 1), MatteMaterial(WHITE)),  # Rear
+    Plane(Pos(0, 0, -0.2), Dir(0, 0, 1), MatteMaterial(BLACK)),  # Rear
     ## Matte Spheres (for RGB)
     Sphere(Pos(-1, 0.7, 3), 0.3, MatteMaterial(LIGHTER_YELLOW)),
     Sphere(Pos(0, 0.7, 3), 0.3, MatteMaterial(LIGHTER_PINK)),
     Sphere(Pos(1, 0.7, 3), 0.3, MatteMaterial(LIGHTER_GREEN)),
-    ## Matte Spheres (for sRGB)
-    # Sphere(Pos(-1, 0.7, 3), 0.3, MatteMaterial(LIGHT_YELLOW)),
-    # Sphere(Pos(0, 0.7, 3), 0.3, MatteMaterial(LIGHT_PINK)),
-    # Sphere(Pos(1, 0.7, 3), 0.3, MatteMaterial(LIGHT_GREEN)),
-    ## Shiny Spheres
-    # Sphere(Pos(-1, 0.7, 3), 0.3, PassiveMaterial(YELLOW, 0.8, 0.2, WHITE)),
-    # Sphere(Pos(0, 0.7, 3), 0.3, PassiveMaterial(LIGHT_GREEN, 0.8, 0.5, LIGHT_GREEN)),
-    # Sphere(Pos(1, 0.7, 3), 0.3, PassiveMaterial(LIGHT_BLUE, 0.8, 0.8, LIGHT_BLUE)),
 ]
 
 cornell_box_2 = [
     ## Ceiling
-    Plane(Pos(0, -1.5, 0), Dir(0, 1, 0), Material(WHITE, 1.0, WHITE)),
+    Plane(Pos(0, -1.5, 0), Dir(0, 1, 0), Material(WHITE, 2.0, BLACK)),
     ## Passive Walls
     Plane(Pos(0, 0, 3.7), Dir(0, 0, -1), MatteMaterial(WHITE)),  # Back
     Plane(Pos(-1.5, 0, 0), Dir(1, 0, 0), MatteMaterial(RED)),  # Left
     Plane(Pos(1.5, 0, 0), Dir(-1, 0, 0), MatteMaterial(GREEN)),  # Right
     Plane(Pos(0, 1, 0), Dir(0, -1, 0), MatteMaterial(WHITE)),  # Floor
-    # Plane(Pos(0, 0, -0.2), Dir(0, 0, 1), MatteMaterial(WHITE)),  # Rear
+    Plane(Pos(0, 0, -0.2), Dir(0, 0, 1), MatteMaterial(BLACK)),  # Rear
     ## Shiny Spheres
     Sphere(Pos(-1.1, 0.6, 3), 0.4, PassiveMaterial(LIGHT_YELLOW, 0.1, 0.2, Color(0.9, 0.9, 0.9))),
     Sphere(Pos(0, 0.6, 3), 0.4, PassiveMaterial(PINK, 0.3, 0.2, Color(0.9, 0.9, 0.9))),
@@ -230,9 +226,7 @@ OBJECTS = cornell_box_1
 
 
 class Ray:
-    # Acts a bit like an exposure setting, the higher the value the more light
-    # is gathered by each pixel. It should be set carefully to avoid "over-exposure".
-    MAX_BOUNCES = 6
+    MAX_BOUNCES = 4
 
     def __init__(self, origin, direction):
         self.orig = origin
@@ -258,7 +252,7 @@ class Ray:
     def update(self, hit_obj, distance):
         # Update origin
         hit_point = self.orig + distance * self.dir
-        normal = hit_obj.get_normal(hit_point)
+        normal = hit_obj.get_normal(hit_point) # FIXME: orientation may be reversed
         # Move point slightly along the normal to prevent double hit on the same object.
         self.orig = hit_point + 0.001 * normal
 
@@ -267,7 +261,6 @@ class Ray:
         # Update color
         # When a ray hits an object, emissive * throughput is added to the pixel's color
         self.color += mat.emission_light * self.throughput
-        # light_strength = normal.dot(self.dir)  # Lambert's cosine law
 
         # Test for specular reflection
         is_specular = random.random() < mat.specular_prob
@@ -282,19 +275,10 @@ class Ray:
             specular_dir = reflect(self.dir, normal)
             # Square the roughness to make it perceptually linear
             self.dir = normalize(lerp(specular_dir, diffuse_dir, mat.roughness**2))
-            # p = max(mat.specular_prob, 0.001)
-            # Division par p => sur-saturation ?
             self.throughput *= mat.specular_color
         else:
             self.dir = diffuse_dir
-            # p = max(1 - mat.specular_prob, 0.001)
             self.throughput *= mat.albedo
-
-        # # Russian roulette (Slower!!)
-        # p = np.max(self.throughput)
-        # if random.random() > p:
-        #     return False
-        # self.throughput /= p
 
     def shoot(self):
         for _ in range(Ray.MAX_BOUNCES):
@@ -345,10 +329,10 @@ def render_frame(i):
     for v in range(cam_height):
         for u in range(cam_width):
             # Anti-aliasing: add a small jitter on the ray direction
-            ju, jv = random.random() - 0.5, random.random() - 0.5
-            ray_dir = np.array([u - u0 + ju, v - v0 + jv, focal])
+            jitter = random_vector_circle()
+            ray_dir = np.array([u - u0, v - v0, focal])
 
-            ray = Ray(cam_position, ray_dir)
+            ray = Ray(cam_position, ray_dir + jitter)
             ray.shoot()
 
             color = ray.color
