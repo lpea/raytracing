@@ -480,9 +480,11 @@ cv::Mat applyPostProcessing(const cv::Mat &image_fp)
             // Apply exposure
             color *= 0.5;
             // Apply tone mapping: convert unbounded HDR color range to SDR color range
+            // Unbound floating point color value is mapped to [0.0, 1.0]
             color = ACESFilm(color);
-            // Convert from linear to sRGB for display
+            // Convert from linear RGB to sRGB
             color = linearTosRGB(color);
+            // Rescale final image for display [0.0, 1.0] → [0, 255]
             im_disp.at<cv::Vec3b>(v, u) = color * 255;
         }
     }
@@ -491,7 +493,7 @@ cv::Mat applyPostProcessing(const cv::Mat &image_fp)
 
 cv::Mat renderFrame(const Scene &scene)
 {
-    static const auto nb_frames = 1000;
+    static const auto nb_frames = 5000;
     static const auto parallel_execution = true;
 
     const auto t0 = std::chrono::steady_clock::now();
@@ -576,7 +578,7 @@ cv::Mat renderFrame(const Scene &scene)
 
 int main()
 {
-    const auto scene = buildSceneCornellBox1();
+    const auto scene = buildSceneCornellBox2();
     const auto final_image = renderFrame(scene);
     cv::imwrite("final_render.png", final_image);
     cv::imshow("final render", final_image);

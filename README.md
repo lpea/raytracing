@@ -3,6 +3,8 @@ Simple raytracer in Python
 
 Note: originally written in Python, the algorithm was ported to C++ which is absurdly faster of course :-)
 
+Both implementation run on CPU (multithreaded).
+
 ## General Principle
 
 An image is formed by simulating the path of the light that hits each pixel. The key principle is that the path of the light is calculated backwards compared to the actual physical phenomenon. Instead of going from a light source to the sensor, virtual rays go from the sensor and bounce on objects before reaching a light source.
@@ -36,7 +38,24 @@ A few parameters can have a dramatic effect on the final result.
 
 The **number of frames** that are averaged together has a significant effect on the image "smoothness": a high number of frames lowers the noise level. It has no effect on the light level (in the sense of "exposure").
 
-The **maximum number of bounces** determines how many bounces are calculated for a single light ray. After a certain number of bounces, we can consider that additional ones do not contribute in a significative way to its light intensity and color. Increasing this value allows to better calculate multiple reflections. However changing this value also affects the light intensity, like changing the exposure time or sensitivity on a camera.
+The **surface of emissive objects** and their **intensity of emission**, obviously. Less light or a lower illumination means that the scene illumination will be lower.
+
+An **Exposure** correction can/must be applied after tone mapping.
+
+## Traps I've fallen into
+
+* I initially set the intensity of the light source to 1.0, thinking it was some sort of hard limit, making the scene way too dark. Butthe intensity can be set arbitrarily high as the "color" at that point is on an open-ended scale.
+* The albedo of the source material was set to white, which allowed a same ray to hit the source multiple times, boosting the rays "strength". The albedo of a source must be set to black to prevent this effect.
+* The random sampling of a vector on the unit sphere was wrongly implemented by sampling theta and phi and converting from spherical coordinates to cartesian, but this method does not give a uniform sampling.
+* The random jitter used for anti-aliasing was sampled on a square, not a circle.
+* The orientation of the normal was not calculated correctly, it must depend on the side of the surface the ray comes from.
+* Exposure correction, tone mapping and sRGB conversion were applied on rendered frames before averaging them together but it must be applied to the displayed result only.
+
+## TODO
+
+* Fuse **emission color** and **emission intensity**?
+* What difference between **specular probability** and **roughness**?
+* Rectangular surfaces are implemented using two triangles. Maybe there's a more efficient method?
 
 ## Resources
 
