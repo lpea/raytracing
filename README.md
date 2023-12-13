@@ -48,7 +48,7 @@ An **Exposure** correction can/must be applied after tone mapping.
 * The albedo of the source material was set to white, which allowed a same ray to hit the source multiple times, boosting the rays "strength". The albedo of a source must be set to black to prevent this effect.
 * The random sampling of a vector on the unit sphere was wrongly implemented by sampling theta and phi and converting from spherical coordinates to cartesian, but this method does not give a uniform sampling.
 * The random jitter used for anti-aliasing was sampled on a square, not a circle.
-* The orientation of the normal was not calculated correctly, it must depend on the side of the surface the ray comes from.
+* The orientation of the normal was not calculated correctly for planar surfaces, it must depend on the side of the surface the ray comes from.
 * Exposure correction, tone mapping and sRGB conversion were applied on rendered frames before averaging them together but it must be applied to the displayed result only.
 
 ## TODO

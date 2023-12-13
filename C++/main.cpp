@@ -251,7 +251,8 @@ public:
         const auto u = ac.dot(DAO) * invdet;
         const auto v = -ab.dot(DAO) * invdet;
         const auto t = AO.dot(normal) * invdet;
-        if (det > 0.0 and t >= 0.0 and u >= 0.0 and v >= 0.0 and (u + v) <= 1.0)
+        // std::abs(det) to detect intersection no matter the normal orientation.
+        if (std::abs(det) > 0.0 and t > 0.0 and u >= 0.0 and v >= 0.0 and (u + v) <= 1.0)
         {
             return {true, t, ray.orig + t * ray.dir, det < 0 ? -normal : normal};
         }
@@ -387,10 +388,9 @@ Scene buildSceneCornellBox2()
     return scene;
 }
 
-Color shootRayAtScene(Ray ray, const Scene &scene)
+Color shootRayAtScene(Ray ray, const Scene &scene, int max_bounces)
 {
-    static const auto MAX_BOUNCES = 8;
-    for (auto i = 0; i < MAX_BOUNCES; ++i)
+    for (auto i = 0; i < max_bounces; ++i)
     {
         Hit best_hit{};
         ObjectPtr hit_obj;
@@ -481,34 +481,50 @@ Color sRGBToLinear(const Color &color)
     return Color(lambda(color[0]), lambda(color[1]), lambda(color[2]));
 }
 
-cv::Mat applyPostProcessing(const cv::Mat &image_fp)
+// Input image uses floating point representation, pixel value get multiplied
+// by 255 and converted to uint8.
+// Optionally apply post processing: exposure scaling, tone-mapping and sRGB conversion.
+cv::Mat convertForDisplay(const cv::Mat &image_fp, bool apply_post_processing)
 {
     static cv::Mat im_disp(image_fp.size(), CV_8UC3);
-    for (auto v = 0; v < image_fp.rows; ++v)
+
+    if (apply_post_processing)
     {
-        for (auto u = 0; u < image_fp.cols; ++u)
+        for (auto v = 0; v < image_fp.rows; ++v)
         {
-            auto color = image_fp.at<Color>(v, u);
-            // Apply exposure
-            color *= 0.5;
-            // Apply tone mapping: convert unbounded HDR color range to SDR color range
-            // Unbound floating point color value is mapped to [0.0, 1.0]
-            color = ACESFilm(color);
-            // Convert from linear RGB to sRGB
-            color = linearTosRGB(color);
-            // Rescale final image for display [0.0, 1.0] → [0, 255]
-            im_disp.at<cv::Vec3b>(v, u) = color * 255;
+            for (auto u = 0; u < image_fp.cols; ++u)
+            {
+                auto color = image_fp.at<Color>(v, u);
+                // Apply exposure
+                color *= 0.5;
+                // Apply tone mapping: convert unbounded HDR color range to SDR color range
+                // Unbound floating point color value is mapped to [0.0, 1.0]
+                color = ACESFilm(color);
+                // Convert from linear RGB to sRGB
+                color = linearTosRGB(color);
+                // Rescale final image for display [0.0, 1.0] → [0, 255]
+                im_disp.at<cv::Vec3b>(v, u) = color * 255;
+            }
         }
     }
+    else
+    {
+        image_fp.convertTo(im_disp, im_disp.type(), 255.0);
+    }
+
     return im_disp;
 }
 
 cv::Mat renderFrame(const Scene &scene)
 {
+    // Algorithm parameters
     static const auto nb_frames = 5000;
     static const auto parallel_execution = true;
+    static const auto max_bounces = 8;
+    static const auto apply_post_processing = true;
 
     const auto t0 = std::chrono::steady_clock::now();
+    // Camera description
     const auto width = 320;
     const auto height = 240;
     const auto origin = Point(0, 0, -1.5);
@@ -518,8 +534,8 @@ cv::Mat renderFrame(const Scene &scene)
     const auto u0 = (width - 1) / 2;
     const auto v0 = (height - 1) / 2;
 
-    cv::Mat avg_im(height, width, CV_32FC3, Color(0, 0, 0));
-    cv::Mat new_im(height, width, CV_32FC3, Color(0, 0, 0));
+    cv::Mat avg_im = cv::Mat::zeros(height, width, CV_32FC3);
+    cv::Mat new_im = cv::Mat::zeros(height, width, CV_32FC3);
     cv::Mat im_disp;
     for (auto i = 0; i < nb_frames; ++i)
     {
@@ -532,7 +548,7 @@ cv::Mat renderFrame(const Scene &scene)
             const auto jitter = randomUnitVectorOnCircle() / 2;
             const Vec dir(u - u0, v - v0, focal);
             const Ray ray(origin, dir + jitter);
-            const auto color = shootRayAtScene(ray, scene);
+            const auto color = shootRayAtScene(ray, scene, max_bounces);
             new_im.at<Color>(v, u) = color;
         };
 
@@ -571,7 +587,7 @@ cv::Mat renderFrame(const Scene &scene)
                   << "Frame " << i << " rendered in " << frame_time << " s" << std::endl;
 
         // Post-process and conversion to 3x8 bits
-        im_disp = applyPostProcessing(avg_im);
+        im_disp = convertForDisplay(avg_im, apply_post_processing);
 
         const auto t3 = std::chrono::steady_clock::now();
         const auto post_proc_time = std::chrono::duration_cast<std::chrono::milliseconds>(t3 - t2).count() / 1000.0;
