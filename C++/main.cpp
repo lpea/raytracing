@@ -332,18 +332,25 @@ Scene buildSceneCornellBox()
     return scene;
 }
 
-static const Color YELLOW1(0.75, 0.9, 0.9);
-static const Color PINK1(0.9, 0.75, 0.9);
-static const Color LIGHT_BLUE1(0.9, 0.9, 0.75);
-
 Scene buildSceneCornellBox1()
 {
     auto scene = buildSceneCornellBox();
 
     // Matte Spheres
-    scene.push_back(std::make_shared<Sphere>(Point(-0.9, 0.95, 2.0), 0.3, makePassiveMaterial(YELLOW1)));
-    scene.push_back(std::make_shared<Sphere>(Point(0, 0.95, 2.0), 0.3, makePassiveMaterial(PINK1)));
-    scene.push_back(std::make_shared<Sphere>(Point(0.9, 0.95, 2.0), 0.3, makePassiveMaterial(LIGHT_BLUE1)));
+    // static const Color YELLOW1(0.75, 0.9, 0.9);
+    // static const Color PINK1(0.9, 0.75, 0.9);
+    // static const Color LIGHT_BLUE1(0.9, 0.9, 0.75);
+    // scene.push_back(std::make_shared<Sphere>(Point(-0.9, 0.95, 2.0), 0.3, makePassiveMaterial(YELLOW1)));
+    // scene.push_back(std::make_shared<Sphere>(Point(0, 0.95, 2.0), 0.3, makePassiveMaterial(PINK1)));
+    // scene.push_back(std::make_shared<Sphere>(Point(0.9, 0.95, 2.0), 0.3, makePassiveMaterial(LIGHT_BLUE1)));
+
+    // with an albedo boost to compensate for sRGB conversion
+    static const Color YELLOW1b(0.5, 0.9, 0.9);
+    static const Color PINK1b(0.9, 0.5, 0.9);
+    static const Color LIGHT_BLUE1b(0.9, 0.9, 0.5);
+    scene.push_back(std::make_shared<Sphere>(Point(-0.9, 0.95, 2.0), 0.3, makePassiveMaterial(YELLOW1b)));
+    scene.push_back(std::make_shared<Sphere>(Point(0, 0.95, 2.0), 0.3, makePassiveMaterial(PINK1b)));
+    scene.push_back(std::make_shared<Sphere>(Point(0.9, 0.95, 2.0), 0.3, makePassiveMaterial(LIGHT_BLUE1b)));
 
     return scene;
 }
@@ -531,12 +538,14 @@ cv::Mat renderFrame(const Scene &scene)
 
         const auto update_pixel_value = [&](int u, int v)
         {
+            Vec dir(u - u0, v - v0, focal);
+
             // Antialiasing: add jitter on ray direction
             const auto jitter = randomUnitVectorOnCircle() / 2;
-            const Vec dir(u - u0, v - v0, focal);
+            dir += jitter;
+
             const Ray ray(origin, dir + jitter);
-            const auto color = shootRayAtScene(ray, scene, max_bounces);
-            new_im.at<Color>(v, u) = color;
+            new_im.at<Color>(v, u) = shootRayAtScene(ray, scene, max_bounces);
         };
 
         if (parallel_execution)
