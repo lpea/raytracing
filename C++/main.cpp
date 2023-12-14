@@ -307,20 +307,25 @@ static const Color GRAY0(0.7, 0.7, 0.7);
 static const Color RED0(0.1, 0.1, 0.7);
 static const Color GREEN0(0.1, 0.7, 0.1);
 
-Scene buildSceneCornellBox()
+Scene buildSceneCornellBox(bool quad_lighting = true)
 {
     std::vector<ObjectPtr> scene;
-    // Light (quad) + ceiling
-    scene.push_back(std::make_shared<Quad>(
-        Point(-0.5, -1.24, 2.25),
-        Point(0.5, -1.24, 2.25),
-        Point(0.5, -1.24, 1.75),
-        Point(-0.5, -1.24, 1.75),
-        Material(LIGHT_YELLOW0, 20.0, BLACK, 0.0, 1.0, LIGHT_YELLOW0)));                                    // Light
-    scene.push_back(std::make_shared<Plane>(Point(0, -1.25, 0), Vec(0, 1, 0), makePassiveMaterial(GRAY0))); // Ceiling
-
-    // Light + ceiling (cheaper alternative)
-    // scene.push_back(std::make_shared<Plane>(Point(0, -1.25, 0), Vec(0, 1, 0), Material(LIGHT_YELLOW0, 2.0, BLACK, 0.0, 1.0, LIGHT_YELLOW0)));
+    if (quad_lighting)
+    {
+        // Light (quad) + ceiling
+        scene.push_back(std::make_shared<Quad>(
+            Point(-0.5, -1.24, 2.25),
+            Point(0.5, -1.24, 2.25),
+            Point(0.5, -1.24, 1.75),
+            Point(-0.5, -1.24, 1.75),
+            Material(LIGHT_YELLOW0, 20.0, BLACK, 0.0, 1.0, LIGHT_YELLOW0)));                                    // Light
+        scene.push_back(std::make_shared<Plane>(Point(0, -1.25, 0), Vec(0, 1, 0), makePassiveMaterial(GRAY0))); // Ceiling
+    }
+    else
+    {
+        // Light + ceiling (cheaper alternative)
+        scene.push_back(std::make_shared<Plane>(Point(0, -1.25, 0), Vec(0, 1, 0), Material(LIGHT_YELLOW0, 2.0, BLACK, 0.0, 1.0, LIGHT_YELLOW0)));
+    }
 
     // Walls
     scene.push_back(std::make_shared<Plane>(Point(0, 0, 2.5), Vec(0, 0, -1), makePassiveMaterial(GRAY0)));   // Back
@@ -378,6 +383,28 @@ Scene buildSceneCornellBox2()
     scene.push_back(std::make_shared<Sphere>(Point(0.0, 0.0, 2.3), 0.175, makePassiveMaterial(WHITE, 1.0, 0.5, GREEN2)));
     scene.push_back(std::make_shared<Sphere>(Point(0.5, 0.0, 2.3), 0.175, makePassiveMaterial(WHITE, 1.0, 0.75, GREEN2)));
     scene.push_back(std::make_shared<Sphere>(Point(1.0, 0.0, 2.3), 0.175, makePassiveMaterial(WHITE, 1.0, 1.0, GREEN2)));
+
+    return scene;
+}
+
+Scene buildSceneSpecularSpheres()
+{
+    auto scene = buildSceneCornellBox(false);
+
+    // Make a 5x5 grid of white spheres with green specular reflections with varying values
+    // of specular reflection probability and roughness.
+    auto prob = 0.0;
+    auto y = -1.0;
+    auto z = 2.3;
+    for (auto row = 0; row < 5; ++row, y += 0.5, z -= 0.2, prob += 0.25)
+    {
+        auto roughness = 0.0;
+        auto x = -1.0;
+        for (auto col = 0; col < 5; ++col, x += 0.5, roughness += 0.25)
+        {
+            scene.push_back(std::make_shared<Sphere>(Point(x, y, z), 0.175, makePassiveMaterial(WHITE, prob, roughness, GREEN2)));
+        }
+    }
 
     return scene;
 }
