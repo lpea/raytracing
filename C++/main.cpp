@@ -254,7 +254,7 @@ public:
         // std::abs(det) to detect intersection no matter the normal orientation.
         if (std::abs(det) > 0.0 and t > 0.0 and u >= 0.0 and v >= 0.0 and (u + v) <= 1.0)
         {
-            return {true, t, ray.orig + t * ray.dir, det < 0 ? -normal : normal};
+            return {true, t, ray.orig + t * ray.dir, normalize(det < 0 ? -normal : normal)};
         }
         return {};
     }
