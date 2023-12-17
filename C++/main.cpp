@@ -23,12 +23,12 @@ public:
     RandomGenerator() : rd(), gen(rd()), dis_uniform(), dis_normal()
     {
     }
-    double getUniform()
+    float getUniform()
     {
         // return a random value in [0.0, 1.0).
         return dis_uniform(gen);
     }
-    double getNormal()
+    float getNormal()
     {
         return dis_normal(gen);
     }
@@ -36,8 +36,8 @@ public:
 private:
     std::random_device rd; // Will be used to obtain a seed for the random number engine
     std::mt19937 gen;
-    std::uniform_real_distribution<> dis_uniform;
-    std::normal_distribution<> dis_normal;
+    std::uniform_real_distribution<float> dis_uniform;
+    std::normal_distribution<float> dis_normal;
 };
 
 float getRandomValueUniform()
@@ -54,7 +54,7 @@ float getRandomValueNormal()
 
 Vec randomUnitVectorOnCircle()
 {
-    const auto theta = getRandomValueUniform() * 2 * M_PI;
+    const auto theta = getRandomValueUniform() * 2.0f * float(M_PI);
     return Vec(std::cos(theta), std::sin(theta), 0);
 }
 
@@ -65,7 +65,7 @@ Vec randomUnitVectorOnSphere()
     const auto x = getRandomValueNormal();
     const auto y = getRandomValueNormal();
     const auto z = getRandomValueNormal();
-    const auto invNorm = 1.0 / std::hypot(x, y, z);
+    const auto invNorm = 1.0f / std::hypot(x, y, z);
     return Vec(x * invNorm, y * invNorm, z * invNorm);
 }
 
@@ -139,7 +139,7 @@ struct Ray
 struct Hit
 {
     bool found{false};
-    double distance{std::numeric_limits<double>::infinity()};
+    float distance{std::numeric_limits<float>::infinity()};
     Point hit_point{};
     Vec normal{};
 };
@@ -162,11 +162,8 @@ struct Sphere : Object
     Hit intersect(const Ray &ray) const override
     {
         const auto v = ray.orig - pos;
-        const auto d = ray.dir;
-        const auto r2 = radius * radius;
-
-        const auto b = d.dot(v);
-        const auto c = v.dot(v) - r2;
+        const auto b = ray.dir.dot(v);
+        const auto c = v.dot(v) - radius * radius;
         const auto delta = b * b - c;
 
         if (delta > 0)
@@ -174,7 +171,7 @@ struct Sphere : Object
             const auto dist = -b - std::sqrt(delta);
             if (dist >= 0)
             {
-                const auto hit_point = ray.orig + dist * d;
+                const auto hit_point = ray.orig + dist * ray.dir;
                 // Todo handle case where the ray came from inside the sphere?
                 return {true, dist, hit_point, (hit_point - pos) / radius};
             }
@@ -204,13 +201,13 @@ struct Plane : Object
     {
         const auto v = pos - ray.orig;
         const auto p = ray.dir.dot(normal);
-        if (p != 0)
+        if (p != 0.0f)
         {
             const auto dist = v.dot(normal) / p;
-            if (dist >= 0)
+            if (dist >= 0.0f)
             {
                 const auto hit_point = ray.orig + dist * ray.dir;
-                return {true, dist, hit_point, p < 0 ? normal : -normal};
+                return {true, dist, hit_point, p < 0.0f ? normal : -normal};
             }
         }
         return {};
@@ -245,16 +242,16 @@ public:
     Hit intersect(const Ray &ray) const override
     {
         const auto det = -ray.dir.dot(normal);
-        const auto invdet = 1.0 / det;
+        const auto invdet = 1.0f / det;
         const auto AO = ray.orig - a;
         const auto DAO = AO.cross(ray.dir);
         const auto u = ac.dot(DAO) * invdet;
         const auto v = -ab.dot(DAO) * invdet;
         const auto t = AO.dot(normal) * invdet;
         // std::abs(det) to detect intersection no matter the normal orientation.
-        if (std::abs(det) > 0.0 and t > 0.0 and u >= 0.0 and v >= 0.0 and (u + v) <= 1.0)
+        if (std::abs(det) > 0.0f and t > 0.0f and u >= 0.0f and v >= 0.0f and (u + v) <= 1.0f)
         {
-            return {true, t, ray.orig + t * ray.dir, normalize(det < 0 ? -normal : normal)};
+            return {true, t, ray.orig + t * ray.dir, normalize(det < 0.0f ? -normal : normal)};
         }
         return {};
     }
@@ -286,7 +283,7 @@ public:
     Hit intersect(const Ray &ray) const override
     {
         const auto hit = abc.intersect(ray);
-        if (hit.found and hit.distance >= 0)
+        if (hit.found and hit.distance >= 0.0f)
         {
             return hit;
         }
@@ -465,7 +462,7 @@ Color shootRayAtScene(Ray ray, const Scene &scene, int max_bounces)
         {
             const auto hit = obj->intersect(ray);
 
-            if (hit.found and 0 < hit.distance and hit.distance < best_hit.distance)
+            if (hit.found and 0.0f < hit.distance and hit.distance < best_hit.distance)
             {
                 best_hit = hit;
                 hit_obj = obj;
@@ -474,7 +471,7 @@ Color shootRayAtScene(Ray ray, const Scene &scene, int max_bounces)
         if (hit_obj)
         {
             const auto &normal = best_hit.normal;
-            ray.orig = best_hit.hit_point + 0.001 * normal;
+            ray.orig = best_hit.hit_point + 0.001f * normal;
 
             const auto &mat = hit_obj->getMaterial();
             ray.color += (mat.emission_color * mat.emission_intensity).mul(ray.throughput);
@@ -494,7 +491,7 @@ Color shootRayAtScene(Ray ray, const Scene &scene, int max_bounces)
             }
 
             // PERFORMANCE
-            if (max(ray.throughput) == 0.0) // Stop bouncing around if the throughput is zero
+            if (max(ray.throughput) == 0.0f) // Stop bouncing around if the throughput is zero
             {
                 break;
             }
@@ -515,11 +512,11 @@ Color ACESFilm(const Color &color)
 {
     // Tone mapping curve
     // https://knarkowicz.wordpress.com/2016/01/06/aces-filmic-tone-mapping-curve/
-    static const auto a = 2.51;
-    static const auto b = 0.03;
-    static const auto c = 2.43;
-    static const auto d = 0.59;
-    static const auto e = 0.14;
+    static const auto a = 2.51f;
+    static const auto b = 0.03f;
+    static const auto c = 2.43f;
+    static const auto d = 0.59f;
+    static const auto e = 0.14f;
     const auto lambda = [&](auto x)
     {
         x = (x * (a * x + b)) / (x * (c * x + d) + e);
@@ -533,7 +530,7 @@ Color linearTosRGB(const Color &color)
     const auto lambda = [&](auto x)
     {
         x = clip(x);
-        return x < 0.0031308 ? x * 12.92 : std::pow(x, 1.0 / 2.4) * 1.055 - 0.055;
+        return x < 0.0031308f ? x * 12.92f : std::pow(x, 1.0f / 2.4f) * 1.055f - 0.055f;
     };
     return Color(lambda(color[0]), lambda(color[1]), lambda(color[2]));
 }
@@ -543,7 +540,7 @@ Color sRGBToLinear(const Color &color)
     const auto lambda = [&](auto x)
     {
         x = clip(x);
-        return x < 0.04045 ? x / 12.92 : std::pow((x + 0.055) / 1.055, 2.4);
+        return x < 0.04045f ? x / 12.92f : std::pow((x + 0.055f) / 1.055f, 2.4f);
     };
     return Color(lambda(color[0]), lambda(color[1]), lambda(color[2]));
 }
@@ -563,7 +560,7 @@ cv::Mat convertForDisplay(const cv::Mat &image_fp, bool apply_post_processing)
             {
                 auto color = image_fp.at<Color>(v, u);
                 // Apply exposure
-                color *= 0.5;
+                color *= 0.5f;
                 // Apply tone mapping: convert unbounded HDR color range to SDR color range
                 // Unbound floating point color value is mapped to [0.0, 1.0]
                 color = ACESFilm(color);
@@ -576,7 +573,7 @@ cv::Mat convertForDisplay(const cv::Mat &image_fp, bool apply_post_processing)
     }
     else
     {
-        image_fp.convertTo(im_disp, im_disp.type(), 255.0);
+        image_fp.convertTo(im_disp, im_disp.type(), 255.0f);
     }
 
     return im_disp;
@@ -595,11 +592,11 @@ cv::Mat renderFrame(const Scene &scene)
     const auto width = 320;
     const auto height = 240;
     const auto origin = Point(0, 0, -1.5);
-    const auto fov = 60 * M_PI / 180;
-    const auto focal = (width / 2) / std::tan(fov / 2);
+    const float fov = 60.0f * M_PI / 180.0f;
+    const auto focal = (width / 2.0f) / std::tan(fov / 2.0f);
 
-    const auto u0 = (width - 1) / 2;
-    const auto v0 = (height - 1) / 2;
+    const auto u0 = float(width - 1) / 2.0f;
+    const auto v0 = float(height - 1) / 2.0f;
 
     cv::Mat avg_im = cv::Mat::zeros(height, width, CV_32FC3);
     cv::Mat new_im = cv::Mat::zeros(height, width, CV_32FC3);
@@ -614,7 +611,7 @@ cv::Mat renderFrame(const Scene &scene)
             Vec dir(u - u0, v - v0, focal);
 
             // Antialiasing: add jitter on ray direction
-            const auto jitter = randomUnitVectorOnCircle() / 2;
+            const auto jitter = randomUnitVectorOnCircle() / 2.0f;
             dir += jitter;
 
             const Ray ray(origin, dir + jitter);
@@ -646,7 +643,7 @@ cv::Mat renderFrame(const Scene &scene)
         }
 
         // Average with previous images
-        const auto weight = 1.0 / (i + 1);
+        const auto weight = 1.0f / (i + 1);
         avg_im = avg_im * (1 - weight) + new_im * weight;
 
         const auto t2 = std::chrono::steady_clock::now();
