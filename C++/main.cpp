@@ -337,6 +337,52 @@ Scene buildSceneCornellBox(bool quad_lighting = true)
     return scene;
 }
 
+Scene buildSceneCornellBoxQuads()
+{
+    const Point left_top_near(-1.25, -1.25, 1.5);
+    const Point left_top_far(-1.25, -1.25, 2.5);
+    const Point left_bottom_near(-1.25, 1.25, 1.5);
+    const Point left_bottom_far(-1.25, 1.25, 2.5);
+    const Point right_top_near(1.25, -1.25, 1.5);
+    const Point right_top_far(1.25, -1.25, 2.5);
+    const Point right_bottom_near(1.25, 1.25, 1.5);
+    const Point right_bottom_far(1.25, 1.25, 2.5);
+
+    std::vector<ObjectPtr> scene;
+    // Light
+    scene.push_back(std::make_shared<Quad>(
+        Point(-0.5, -1.24, 2.25),
+        Point(0.5, -1.24, 2.25),
+        Point(0.5, -1.24, 1.75),
+        Point(-0.5, -1.24, 1.75),
+        Material(LIGHT_YELLOW0, 20.0, BLACK, 0.0, 1.0, LIGHT_YELLOW0)));
+
+    // Walls
+    scene.push_back(std::make_shared<Quad>(
+        left_top_near, left_top_far, right_top_far, right_top_near, makePassiveMaterial(GRAY0))); // Ceiling
+    scene.push_back(std::make_shared<Quad>(
+        left_top_far, right_top_far, right_bottom_far, left_bottom_far, makePassiveMaterial(GRAY0))); // Back
+    scene.push_back(std::make_shared<Quad>(
+        left_top_near, left_top_far, left_bottom_far, left_bottom_near, makePassiveMaterial(RED0))); // Left
+    // scene.push_back(std::make_shared<Triangle>(
+    //     left_top_near, left_top_far, left_bottom_far, makePassiveMaterial(RED0))); // Left (up)
+    // scene.push_back(std::make_shared<Triangle>(
+    //     left_bottom_far, left_bottom_near, left_top_near, makePassiveMaterial(RED0))); // Left (down)
+    scene.push_back(std::make_shared<Quad>(
+        right_top_near, right_top_far, right_bottom_far, right_bottom_near, makePassiveMaterial(GREEN0))); // Right
+    scene.push_back(std::make_shared<Quad>(
+        left_bottom_near, left_bottom_far, right_bottom_far, right_bottom_near, makePassiveMaterial(GRAY0))); // Floor
+
+    // scene.push_back(std::make_shared<Quad>(
+    //     Point(-1.25, -1.25, -1.6),
+    //     Point(1.25, -1.25, -1.6),
+    //     Point(1.25, 1.25, -1.6),
+    //     Point(-1.25, 1.25, -1.6),
+    //     makePassiveMaterial(GRAY0))); // Rear
+
+    return scene;
+}
+
 Scene buildSceneCornellBox1()
 {
     auto scene = buildSceneCornellBox();
