@@ -1,9 +1,21 @@
 # raytracing
-Simple raytracer in Python
+Simple raytracer greatly inspired by [Seb Lague's video tutorial](https://www.youtube.com/watch?v=Qz0KTGYJtUk) and [Alan Wolfe's amazing blog post series](https://blog.demofox.org/2020/05/25/casual-shadertoy-path-tracing-1-basic-camera-diffuse-emissive/).
 
-Note: originally written in Python, the algorithm was ported to C++ which is absurdly faster of course :-)
+Originally written in Python, the algorithm was also ported to C++ (CPU only) and C++ with GLSL shaders using the Ogre framework.
 
-Both implementation run on CPU (multithreaded).
+## Dependencies
+
+### Python
+
+The script Python/rt.py depends on the `opencv` and `numpy` python packages.
+
+### C++
+
+The project in C++/ requires the OpenCV library (`opencv-devel` package on Fedora).
+
+### Shaders
+
+The project in Shader/ requires the Ogre library (`ogre-devel` package on Fedora).
 
 ## General Principle
 

@@ -1,0 +1,33 @@
+vertex_program TestVP glsl
+{
+  source vert.glsl
+}
+
+fragment_program TestFP glsl
+{
+  source frag.glsl
+}
+
+material TestMaterial
+{
+  technique
+  {
+    pass
+    {
+      vertex_program_ref TestVP
+      {
+
+      }
+      fragment_program_ref TestFP
+      {
+        // auto params: see OgreGpuProgramParams.h
+        param_named_auto time time
+        param_named_auto vp_width viewport_width
+        param_named_auto vp_height viewport_height
+        param_named_auto camera_pos camera_position
+
+        //param_named_auto wvp_matrix worldviewproj_matrix
+        //param_named_auto textureSize texture_size 0
+
+      }
+}}}

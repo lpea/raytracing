@@ -508,6 +508,8 @@ Color shootRayAtScene(Ray ray, const Scene& scene, int max_bounces)
         break;
       }
       // TODO: break early if throughput < threshold?
+    } else {
+      break; // break if no hit found
     }
   }
 
