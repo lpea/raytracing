@@ -252,7 +252,7 @@ class Ray:
     def update(self, hit_obj, distance):
         # Update origin
         hit_point = self.orig + distance * self.dir
-        normal = hit_obj.get_normal(hit_point) # FIXME: orientation may be reversed
+        normal = hit_obj.get_normal(hit_point)  # FIXME: orientation may be reversed
         # Move point slightly along the normal to prevent double hit on the same object.
         self.orig = hit_point + 0.001 * normal
 

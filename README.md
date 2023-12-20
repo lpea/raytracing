@@ -44,7 +44,7 @@ An **Exposure** correction can/must be applied after tone mapping.
 
 ## Traps I've fallen into
 
-* I initially set the intensity of the light source to 1.0, thinking it was some sort of hard limit, making the scene way too dark. Butthe intensity can be set arbitrarily high as the "color" at that point is on an open-ended scale.
+* I initially set the intensity of the light source to 1.0, thinking it was some sort of hard limit, making the scene way too dark. But the intensity can be set arbitrarily high as the "color" at that point is on an open-ended scale.
 * The albedo of the source material was set to white, which allowed a same ray to hit the source multiple times, boosting the rays "strength". The albedo of a source must be set to black to prevent this effect.
 * The random sampling of a vector on the unit sphere was wrongly implemented by sampling theta and phi and converting from spherical coordinates to cartesian, but this method does not give a uniform sampling.
 * The random jitter used for anti-aliasing was sampled on a square, not a circle.
